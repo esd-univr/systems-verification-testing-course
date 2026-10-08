@@ -15,7 +15,7 @@ The Codespace uses:
 
 `ghcr.io/esd-univr/hdl-course-toolchain:latest`
 
-No local installation of the HDL toolchain is required.
+The development container opens as the non-root `student` user. No local installation of the HDL toolchain is required.
 
 ## Repository structure
 

@@ -1,6 +1,7 @@
 {
   "name": "Systems Verification & Testing",
   "image": "ghcr.io/esd-univr/hdl-course-toolchain:latest",
+  "remoteUser": "student",
   "customizations": {
     "vscode": {
       "extensions": [
