@@ -1,0 +1,15 @@
+# Editor / OS files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Simulation / build artifacts
+build/
+out/
+*.vcd
+*.fst
