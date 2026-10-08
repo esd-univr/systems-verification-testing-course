@@ -21,7 +21,28 @@ The development container opens as the non-root `student` user. No local install
 
 ```text
 .devcontainer/   Codespaces / Dev Container configuration
-lesson-01/       Material for Lesson 01
+lesson-01/       Lesson 01 — RTL modelling
 ```
 
-Additional lessons will be published when appropriate.
+Only released lessons are published here.
+
+## Updating an existing Codespace
+
+For newly published lesson material or other repository changes:
+
+```bash
+git pull --ff-only
+```
+
+If `.devcontainer/` changes, pull first and then run **Codespaces: Rebuild Container** from the VS Code Command Palette.
+
+## Restarting Lesson 01
+
+From inside `lesson-01/`:
+
+```bash
+make clean
+git restore .
+```
+
+This restores tracked Lesson 01 files to the current checked-out commit.
