@@ -6,7 +6,19 @@
     "vscode": {
       "extensions": [
         "ms-python.python"
-      ]
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "Course zsh",
+        "terminal.integrated.profiles.linux": {
+          "Course zsh": {
+            "path": "/bin/bash",
+            "args": [
+              "-lc",
+              "exec zsh -l"
+            ]
+          }
+        }
+      }
     }
   }
 }
