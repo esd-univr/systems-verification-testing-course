@@ -1,24 +1,20 @@
 # Lesson 1 — RTL modelling
 
-## Start here
-
-This repository already runs inside the course HDL environment in GitHub Codespaces.
+## Setup, once
 
 ```bash
-cd lesson-01
-make help
+curl -fsSL https://github.com/esd-univr/hdl-course-toolchain/releases/latest/download/install.sh | bash
+mkdir lesson1-rtl && tar -xzf lesson1-rtl.tar.gz -C lesson1-rtl && cd lesson1-rtl
 ```
 
-Everything below is run from this directory.
-
-To restart the tracked Lesson 1 files from the repository version:
+Docker must already be running. Open a shell inside the course environment and stay in
+it. This folder is your working directory there:
 
 ```bash
-make clean
-git restore .
+hdl-toolchain --workspace . -- zsh -l
 ```
 
-`git restore .` discards your changes to tracked files in `lesson-01`.
+Everything below is typed in that shell.
 
 ## What is in here
 
@@ -104,7 +100,7 @@ commands. For `02_incomplete.sv` that name is `incomplete`: `-Mdir` becomes
 - [ ] **3 — a register waits for the clock**
   - A wire and a register, driven by the same input. `d` pulses at 3, 17 and 33.
   - List the ticks where `q_reg` changes. What do they have in common?
-  - One pulse never reaches `q_reg`. Which, and what is different about it?
+  - One pulse is never captured by `q_reg`. Which, and what is different about it?
 - [ ] **4 — `=` and `<=` are two different circuits**
   - The same three lines, one operator apart. One pulse, sampled once.
   - `q_b` rises at tick 5, `q_nb` at tick 15. How many storage stages each?
@@ -115,13 +111,15 @@ commands. For `02_incomplete.sv` that name is `incomplete`: `-Mdir` becomes
   - Read what the compiler said before the simulation ran.
 - [ ] **6 — one source file, several circuits**
   - One module, instantiated at two widths.
-  - When did the `for` loop run?
+  - In simulation, when is the procedural `for` evaluated? What parallel hardware does it describe?
 
 ## Part 2 — write the counter
 
 `rtl/counter.sv` has the module header and nothing else. Write the body.
 
-**What it must do.** There is no reset. At every rising edge of `clk`:
+**What it must do.** There is no reset. Before the first load the registered
+value is unspecified; the first load establishes a known state, but it is not a
+reset. At every rising edge of `clk`:
 
 - if `start` is high, the counter takes the value on `in`;
 - otherwise, if `dec` is high and the counter is not already at zero, it goes
@@ -150,8 +148,9 @@ write it once and let the parameter do the rest.
   - Find a **load**, a **decrement**, the edge where the value **reaches zero**
     and `stop` rises with it, a **blocked decrement** with `dec` high while the
     value is already zero, and the edge where **both** `start` and `dec` are high
-- [ ] **One of those is not what it looks like**
-  - The value drops by exactly one at three edges. Only two are decrements.
-  - Which input tells them apart? Did you pick one that was not one?
-  - Add `value8` and `in8` to the view. The edge that fools you at four bits
-    is obvious at eight. Say why
+- [ ] **Do not classify an edge from `value` alone**
+  - Find the edge where `start` and `dec` are both high. Which request won?
+  - Use `start`, `dec`, `in4` and `value4` together to justify the answer rather
+    than guessing from the output value.
+  - Add `value8` and `in8` to the view and confirm that the same control rule is
+    applied by the second parameterized instance.
