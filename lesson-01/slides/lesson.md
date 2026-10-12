@@ -35,7 +35,7 @@ By the end of this lesson you should be able to:
 - reason about HDL concurrency rather than software execution order;
 - choose blocking and non-blocking assignments deliberately;
 - recognize incomplete combinational assignment and unintended storage;
-- use parameters and compile-time `for` loops;
+- use parameters and static-bounded procedural `for` loops;
 - drive a compiler, a simulator and a waveform viewer by hand;
 - read a VCD trace as evidence about *when* a value changed.
 
@@ -308,6 +308,10 @@ missing assignment on a path
 That storage element is a **latch**: state you never asked for, in a block you
 called combinational.
 
+No assignment here does **not** mean "assign `X`": `y` keeps its previous value.
+And because no clock edge was specified, the storage implied by this description
+is level-sensitive rather than an edge-triggered flip-flop.
+
 ---
 
 <!-- _class: diagram -->
@@ -417,8 +421,8 @@ The question to ask is:
 
 A wire and a register driven by the same input are the cleanest way to see it.
 One follows its input continuously; the other samples it, and only at an edge.
-An input pulse that lives and dies between two edges **never reaches the
-register at all**.
+An input pulse that lives and dies between two edges is **never captured by the
+register**.
 
 ---
 
@@ -494,9 +498,16 @@ This shape is the thing you will build in the second half of the lesson.
 Use blocking assignment `=` for ordinary combinational procedural logic:
 
 ```sv
-stage1 = d;
-q      = stage1;
+always_comb begin
+  tmp = a & b;
+  y   = tmp | c;
+end
 ```
+
+`=` means **compute now, update now**: `y` sees the `tmp` just computed.
+The simulator evaluates these statements in source order, but that order is not
+hardware scheduling. The AND and OR both exist; source order expresses their
+dependency.
 
 ---
 
@@ -509,9 +520,14 @@ stage1 <= d;
 q      <= stage1;
 ```
 
-For the non-blocking form, right-hand sides are evaluated from the pre-update state of that clock event; the registered updates take effect together afterward.
+`<=` means **compute now, update later**. Right-hand sides are evaluated from
+the pre-update state of that clock event; the registered updates take effect
+together afterward.
 
 ```text
+blocking      = compute now, update now
+non-blocking <= compute now, update later
+
 combinational logic -> =
 clocked state        -> <=
 ```
@@ -560,9 +576,13 @@ Predict both before turning the page.
 
 # Two spellings, two circuits
 
-Be clear about what kind of difference this is. `=` against `<=` in a clocked
-block changes **what circuit you described**, not how an optimiser lays one out.
-Two spellings, two different circuits.
+Be clear about what kind of difference this is **in this specimen**. `q` reads
+`stage1` after `stage1` is assigned. With `=`, it sees the new value in the same
+clock event; with `<=`, it sees the pre-edge value, preserving a second storage
+stage.
+
+Here the operator change therefore changes the state structure you described;
+it is not merely an optimiser choice.
 
 The compiler names it:
 
@@ -674,9 +694,10 @@ One source file, two different circuits.
 
 ---
 
-# Compile-time `for` loops
+# Procedural `for` loops with static bounds
 
-A synthesizable RTL loop describes replicated hardware when its bounds are known during elaboration:
+A synthesizable procedural loop with static bounds is a compact way to describe
+repeated relations:
 
 ```sv
 always_comb begin
@@ -690,14 +711,17 @@ end
 
 # When did that loop run?
 
-The loop is **inside** `always_comb`, and that is the point. It is not a loop
-that runs; it is a description of `WIDTH` wires that all exist at once. The
-elaborator unrolls it because `WIDTH` is fixed before any hardware is built.
+The loop is **inside** `always_comb`, and that distinction matters.
+
+In simulation it is a procedural loop: whenever the block is evaluated, the
+iterations are processed in order, with **no simulation time advancing between
+them**.
+
+In this example the iterations are independent. Because `WIDTH` is fixed before
+simulation, synthesis can unroll the body into `WIDTH` parallel connections.
+The hardware does not reverse one bit, wait, and then reverse the next.
 
 Every bit of `q` is assigned, so the block is complete and no storage appears.
-
-Ask yourself when that loop ran. The honest answer is that it never did: it was
-unrolled before the simulation started.
 
 ---
 
@@ -850,8 +874,10 @@ And at all times:
 `WIDTH` is a parameter and the checker builds your file at two widths
 (`REQ-CNT-001`). Write it once.
 
-Initialization happens through the load path (`REQ-CNT-008`). Start reasoning at
-the first load, and ignore whatever the register held before it.
+Initialization happens through the load path (`REQ-CNT-008`). The first load
+establishes a known state; it is **not a reset**. Start reasoning at that load,
+and do not infer reset semantics from any value the simulator happens to show
+before it.
 
 ---
 
@@ -883,13 +909,14 @@ clk ─────────────────────────>
 
 ---
 
-# The four pieces, and the loop
+# The four pieces and the feedback path
 
 Four pieces, and you have met all four this morning: a local signal for the next
 value, a continuous assignment for `stop`, an `always_comb` that chooses, and an
 `always_ff` that stores.
 
-The arrow from `value` back into the select is why the counter can hold.
+The arrow from `value` back into the select is the feedback path that lets the
+counter hold its registered value.
 
 ---
 
@@ -960,10 +987,10 @@ faster than guessing.
 
 # What a green run does not say
 
-What it cannot tell you is whether the trace means what you think it means. A
-value that drops by exactly one is not necessarily a decrement: a load can look
-identical if you only watch the output. The input that distinguishes them is
-right there in the same trace.
+What it cannot tell you is whether the trace means what you think it means. An
+output value alone does not identify the path that produced it: load and
+decrement can both change the register, and priority is visible only if you
+inspect `start`, `dec`, `in` and `value` together.
 
 **A green run is necessary and not sufficient.** It says the stimulus the
 checker chose produced the values it expected. Nothing more.
